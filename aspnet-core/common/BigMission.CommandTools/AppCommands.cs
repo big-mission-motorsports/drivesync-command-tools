@@ -26,21 +26,24 @@ namespace BigMission.CommandTools
         private readonly string appId;
         private readonly string kafkaConnStr;
         private readonly string groupId;
-        private readonly string topic;
 
-        public AppCommands(string appId, string kafkaConnStr, string groupId, string topic, ILogger logger)
+        public AppCommands(string appId, string kafkaConnStr, ILogger logger)
         {
             this.appId = appId;
             this.kafkaConnStr = kafkaConnStr;
-            this.groupId = groupId;
-            this.topic = topic;
             Logger = logger;
             ehReader = new EventHubHelpers(logger);
+            groupId = EventHubConsumerClient.DefaultConsumerGroupName;
         }
 
-        public async Task ListenForCommandsAsync(Action<Command> commandCallback)
+        public async Task ListenForCommandsAsync(Action<Command> commandCallback, string topic, string destinationGuid = null)
         {
             this.commandCallback = commandCallback ?? throw new InvalidOperationException();
+
+            if (!string.IsNullOrWhiteSpace(destinationGuid))
+            {
+                topic += "-" + destinationGuid;
+            }
 
             await ehReader.ReadEventHubPartitionsAsync(kafkaConnStr, topic, groupId, null, EventPosition.Latest, ReceivedEventCallback);
         }
@@ -70,8 +73,13 @@ namespace BigMission.CommandTools
         }
 
 
-        public async Task SendCommand(Command command)
+        public async Task SendCommand(Command command, string topic, string destinationGuid = null)
         {
+            if (!string.IsNullOrWhiteSpace(destinationGuid))
+            {
+                topic += "-" + destinationGuid;
+            }
+
             await using var producerClient = new EventHubProducerClient(kafkaConnStr, topic);
             using EventDataBatch eventBatch = await producerClient.CreateBatchAsync();
             var data = JsonConvert.SerializeObject(command);
