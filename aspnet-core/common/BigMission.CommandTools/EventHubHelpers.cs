@@ -81,5 +81,14 @@ namespace BigMission.CommandTools
         {
             cancellationToken.Cancel();
         }
+
+        public static string[] GetPartitionFilter(string idStr)
+        {
+            if (!string.IsNullOrWhiteSpace(idStr))
+            {
+                return idStr.Split(',');
+            }
+            return null;
+        }
     }
 }
