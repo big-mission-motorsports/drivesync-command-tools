@@ -19,7 +19,7 @@ namespace BigMission.CommandTools
 
         public EventHubHelpers(ILogger logger)
         {
-            Logger = logger ?? throw new InvalidOperationException();
+            Logger = logger;
         }
 
 
@@ -42,7 +42,7 @@ namespace BigMission.CommandTools
                 }
                 else
                 {
-                    Logger.Warn($"Partition {partitionId} does not exist, skipping");
+                    Logger?.Warn($"Partition {partitionId} does not exist, skipping");
                 }
             }
 
@@ -59,7 +59,7 @@ namespace BigMission.CommandTools
                 }
                 catch (Exception ex)
                 {
-                    Logger.Error(ex, "Unable to process event from event hub partition");
+                    Logger?.Error(ex, "Unable to process event from event hub partition");
                 }
             }
         }
@@ -73,7 +73,7 @@ namespace BigMission.CommandTools
             }
             catch (Exception ex)
             {
-                Logger.Error(ex, "Unable to complete event callback.");
+                Logger?.Error(ex, "Unable to complete event callback.");
             }
         }
 

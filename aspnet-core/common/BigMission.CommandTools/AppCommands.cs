@@ -56,7 +56,7 @@ namespace BigMission.CommandTools
                 {
                     if (destObj.ToString() == appId)
                     {
-                        Logger.Trace($"Received command on partition {receivedEvent.Partition.PartitionId}");
+                        Logger?.Trace($"Received command on partition {receivedEvent.Partition.PartitionId}");
                         var json = Encoding.UTF8.GetString(receivedEvent.Data.Body.ToArray());
                         var cmd = JsonConvert.DeserializeObject<Command>(json);
                         if (cmd != null)
@@ -68,7 +68,7 @@ namespace BigMission.CommandTools
             }
             catch (Exception ex)
             {
-                Logger.Error(ex, "Unable to process event from event hub partition");
+                Logger?.Error(ex, "Unable to process event from event hub partition");
             }
         }
 

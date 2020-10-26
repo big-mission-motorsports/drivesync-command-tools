@@ -63,7 +63,7 @@ namespace BigMission.CommandTools
                     bool subscribed = commandTypeSubscriptions.Contains(cmdObj.ToString());
                     if (subscribed)
                     {
-                        Logger.Info($"Received command: '{cmdObj}'");
+                        Logger?.Info($"Received command: '{cmdObj}'");
                         var value = Encoding.UTF8.GetString(receivedEvent.Data.Body.ToArray());
                         commandCallback(new KeyValuePair<string, string>(cmdObj.ToString(), value));
                     }
@@ -71,7 +71,7 @@ namespace BigMission.CommandTools
             }
             catch (Exception ex)
             {
-                Logger.Error(ex, "Unable to process event from event hub partition");
+                Logger?.Error(ex, "Unable to process event from event hub partition");
             }
         }
 
