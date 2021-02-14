@@ -6,6 +6,7 @@ using Newtonsoft.Json;
 using NLog;
 using System;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace BigMission.CommandTools
@@ -36,13 +37,17 @@ namespace BigMission.CommandTools
             groupId = EventHubConsumerClient.DefaultConsumerGroupName;
         }
 
-        public async Task ListenForCommandsAsync(Action<Command> commandCallback, string topic, string destinationGuid = null)
+        public async Task ListenForCommandsAsync(Action<Command> commandCallback, string topic)
         {
             this.commandCallback = commandCallback ?? throw new InvalidOperationException();
 
-            if (!string.IsNullOrWhiteSpace(destinationGuid))
+            // There should be a guid at the end of the command channel for the destination app
+            // This regex checks for a guid at the end of the topic name
+            var guidRegex = new Regex("([0-9A-Fa-f]{8}[-][0-9A-Fa-f]{4}[-][0-9A-Fa-f]{4}[-][0-9A-Fa-f]{4}[-][0-9A-Fa-f]{12})$");
+            var hasGuid = guidRegex.IsMatch(topic);
+            if (!hasGuid)
             {
-                topic += "-" + destinationGuid;
+                topic += "-" + appId;
             }
 
             await ehReader.ReadEventHubPartitionsAsync(kafkaConnStr, topic, groupId, null, EventPosition.Latest, ReceivedEventCallback);
