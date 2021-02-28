@@ -50,7 +50,19 @@ namespace BigMission.CommandTools
                 topic += "-" + appId;
             }
 
-            await ehReader.ReadEventHubPartitionsAsync(kafkaConnStr, topic, groupId, null, EventPosition.Latest, ReceivedEventCallback);
+            while (true)
+            {
+                try
+                {
+                    await ehReader.ReadEventHubPartitionsAsync(kafkaConnStr, topic, groupId, null, EventPosition.Latest, ReceivedEventCallback);
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error(ex, "Unable to connect, retrying.");
+                    await Task.Delay(2000);
+                }
+            }
         }
 
         private void ReceivedEventCallback(PartitionEvent receivedEvent)
