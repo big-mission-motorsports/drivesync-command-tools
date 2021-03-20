@@ -22,7 +22,7 @@ namespace BigMission.CommandTools
         private Action<Command> commandCallback;
         private readonly EventHubHelpers ehReader;
 
-        private bool disposed;
+        private volatile bool disposed;
 
         private readonly string appId;
         private readonly string kafkaConnStr;
@@ -50,7 +50,7 @@ namespace BigMission.CommandTools
                 topic += "-" + appId;
             }
 
-            while (true)
+            while (!disposed)
             {
                 try
                 {
@@ -141,7 +141,7 @@ namespace BigMission.CommandTools
 
             if (disposing)
             {
-
+                ehReader.CancelProcessing();
             }
 
             disposed = true;
