@@ -4,5 +4,6 @@
     {
         public const string UPDATE_CONFIG = "UpdateConfig";
         public const string SEND_CAN = "SendCan";
+        public const string SET_LOG_LEVEL = "SetLogLevel";
     }
 }
