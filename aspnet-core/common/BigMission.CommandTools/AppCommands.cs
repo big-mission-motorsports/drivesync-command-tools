@@ -71,7 +71,7 @@ namespace BigMission.CommandTools
             {
                 if (receivedEvent.Data.Properties.TryGetValue(DESTID, out object destObj))
                 {
-                    if (destObj.ToString() == appId)
+                    if (string.Compare(destObj.ToString(), appId, true) == 0)
                     {
                         Logger?.Trace($"Received command on partition {receivedEvent.Partition.PartitionId}");
                         var json = Encoding.UTF8.GetString(receivedEvent.Data.Body.ToArray());
