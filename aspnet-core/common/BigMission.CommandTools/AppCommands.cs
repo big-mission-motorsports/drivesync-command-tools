@@ -19,7 +19,7 @@ namespace BigMission.CommandTools
         const string DESTID = "DestId";
         private ILogger Logger { get; }
 
-        private Action<Command> commandCallback;
+        private Func<Command, Task> commandCallback;
         private readonly EventHubHelpers ehReader;
 
         private volatile bool disposed;
@@ -37,9 +37,9 @@ namespace BigMission.CommandTools
             groupId = EventHubConsumerClient.DefaultConsumerGroupName;
         }
 
-        public async Task ListenForCommandsAsync(Action<Command> commandCallback, string topic)
+        public async Task ListenForCommandsAsync(Func<Command, Task> commandCallback, string topic)
         {
-            this.commandCallback = commandCallback ?? throw new InvalidOperationException();
+            this.commandCallback = commandCallback;
 
             // There should be a guid at the end of the command channel for the destination app
             // This regex checks for a guid at the end of the topic name
@@ -65,7 +65,7 @@ namespace BigMission.CommandTools
             }
         }
 
-        private void ReceivedEventCallback(PartitionEvent receivedEvent)
+        private async Task ReceivedEventCallback(PartitionEvent receivedEvent)
         {
             try
             {
@@ -78,7 +78,7 @@ namespace BigMission.CommandTools
                         var cmd = JsonConvert.DeserializeObject<Command>(json);
                         if (cmd != null)
                         {
-                            commandCallback(cmd);
+                            await commandCallback(cmd);
                         }
                     }
                 }

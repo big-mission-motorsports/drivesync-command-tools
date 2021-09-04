@@ -20,7 +20,7 @@ namespace BigMission.CommandTools
 
         private EventHubHelpers ehReader;
         private Task receiveStatus;
-        private Action<KeyValuePair<string, string>> commandCallback;
+        private Func<KeyValuePair<string, string>, Task> commandCallback;
         private string[] commandTypeSubscriptions;
 
         private bool disposed;
@@ -39,7 +39,7 @@ namespace BigMission.CommandTools
         }
 
 
-        public void Subscribe(string[] commandTypeSubscriptions, Action<KeyValuePair<string, string>> commandCallback)
+        public void Subscribe(string[] commandTypeSubscriptions, Func<KeyValuePair<string, string>, Task> commandCallback)
         {
             if (commandCallback == null || this.commandTypeSubscriptions != null)
             {
@@ -53,7 +53,7 @@ namespace BigMission.CommandTools
             receiveStatus = ehReader.ReadEventHubPartitionsAsync(kafkaConnStr, topic, groupId, null, EventPosition.Latest, ReceivedEventCallback);
         }
 
-        private void ReceivedEventCallback(PartitionEvent receivedEvent)
+        private async Task ReceivedEventCallback(PartitionEvent receivedEvent)
         {
             try
             {
@@ -65,7 +65,7 @@ namespace BigMission.CommandTools
                     {
                         Logger?.Info($"Received command: '{cmdObj}'");
                         var value = Encoding.UTF8.GetString(receivedEvent.Data.Body.ToArray());
-                        commandCallback(new KeyValuePair<string, string>(cmdObj.ToString(), value));
+                        await commandCallback(new KeyValuePair<string, string>(cmdObj.ToString(), value));
                     }
                 }
             }

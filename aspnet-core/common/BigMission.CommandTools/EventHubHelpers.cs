@@ -12,7 +12,7 @@ namespace BigMission.CommandTools
 {
     public class EventHubHelpers
     {
-        private Action<PartitionEvent> callback;
+        private Func<PartitionEvent, Task> callback;
         private ILogger Logger { get; }
         private readonly CancellationTokenSource cancellationToken = new CancellationTokenSource();
 
@@ -23,10 +23,10 @@ namespace BigMission.CommandTools
         }
 
 
-        public async Task ReadEventHubPartitionsAsync(string ehConnection, string ehName, string consumerGroup, 
-            string[] partitionIdsFilter, EventPosition eventPosition,  Action<PartitionEvent> callback)
+        public async Task ReadEventHubPartitionsAsync(string ehConnection, string ehName, string consumerGroup,
+            string[] partitionIdsFilter, EventPosition eventPosition, Func<PartitionEvent, Task> callback)
         {
-            this.callback = callback ?? throw new InvalidOperationException();
+            this.callback = callback;
 
             await using var consumer = new EventHubConsumerClient(consumerGroup, ehConnection, ehName);
 
@@ -55,25 +55,12 @@ namespace BigMission.CommandTools
             {
                 try
                 {
-                    ThreadPool.QueueUserWorkItem(ProcessCallback, receivedEvent);
+                    await callback(receivedEvent);
                 }
                 catch (Exception ex)
                 {
                     Logger?.Error(ex, "Unable to process event from event hub partition");
                 }
-            }
-        }
-
-        private void ProcessCallback(object o)
-        {
-            try
-            {
-                var receivedEvent = (PartitionEvent)o;
-                callback(receivedEvent);
-            }
-            catch (Exception ex)
-            {
-                Logger?.Error(ex, "Unable to complete event callback.");
             }
         }
 
