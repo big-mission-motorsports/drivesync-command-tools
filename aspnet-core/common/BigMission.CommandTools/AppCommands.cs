@@ -2,6 +2,7 @@
 using Azure.Messaging.EventHubs.Consumer;
 using Azure.Messaging.EventHubs.Producer;
 using BigMission.CommandTools.Models;
+using Microsoft.AspNetCore.SignalR.Client;
 using Newtonsoft.Json;
 using NLog;
 using System;
@@ -16,96 +17,69 @@ namespace BigMission.CommandTools
     /// </summary>
     public class AppCommands : IDisposable
     {
-        const string DESTID = "DestId";
         private ILogger Logger { get; }
 
-        private Func<Command, Task> commandCallback;
-        private readonly EventHubHelpers ehReader;
-
         private volatile bool disposed;
+        private readonly HubConnection hubConnection;
 
-        private readonly string appId;
-        private readonly string kafkaConnStr;
-        private readonly string groupId;
 
-        public AppCommands(string appId, string kafkaConnStr, ILogger logger)
+        public AppCommands(Guid appId, string apiKey, string url, ILogger logger)
         {
-            this.appId = appId;
-            this.kafkaConnStr = kafkaConnStr;
             Logger = logger;
-            ehReader = new EventHubHelpers(logger);
-            groupId = EventHubConsumerClient.DefaultConsumerGroupName;
+
+            hubConnection = new HubConnectionBuilder()
+                .WithUrl(url, option =>
+                {
+                    option.AccessTokenProvider = async () =>
+                    {
+                        var token = KeyUtilities.EncodeToken(appId, apiKey);
+                        return await Task.FromResult(token);
+                    };
+                }).Build();
+
+            hubConnection.Closed += HubConnection_Closed;
         }
 
-        public async Task ListenForCommandsAsync(Func<Command, Task> commandCallback, string topic)
+        private async Task HubConnection_Closed(Exception arg)
         {
-            this.commandCallback = commandCallback;
-
-            // There should be a guid at the end of the command channel for the destination app
-            // This regex checks for a guid at the end of the topic name
-            var guidRegex = new Regex("([0-9A-Fa-f]{8}[-][0-9A-Fa-f]{4}[-][0-9A-Fa-f]{4}[-][0-9A-Fa-f]{4}[-][0-9A-Fa-f]{12})$");
-            var hasGuid = guidRegex.IsMatch(topic);
-            if (!hasGuid)
+            while (hubConnection.State == HubConnectionState.Disconnected)
             {
-                topic += "-" + appId;
+                await Task.Delay(TimeSpan.FromSeconds(5));
+                Logger.Debug("Attempting to reconnect to service hub.");
+                await TryConnect();
             }
+        }
 
-            while (!disposed)
+        private async Task TryConnect()
+        {
+            if (hubConnection.State == HubConnectionState.Disconnected)
             {
                 try
                 {
-                    await ehReader.ReadEventHubPartitionsAsync(kafkaConnStr, topic, groupId, null, EventPosition.Latest, ReceivedEventCallback);
-                    break;
+                    await hubConnection.StartAsync();
                 }
                 catch (Exception ex)
                 {
-                    Logger.Error(ex, "Unable to connect, retrying.");
-                    await Task.Delay(2000);
+                    Logger.Error(ex, "Error connecting to service hub.");
                 }
             }
         }
 
-        private async Task ReceivedEventCallback(PartitionEvent receivedEvent)
+        public async Task ListenForCommandsAsync(Func<Command, Task> commandCallback)
         {
-            try
+            await TryConnect();
+            hubConnection.On("ReceiveCommandV1", async (Command command) =>
             {
-                if (receivedEvent.Data.Properties.TryGetValue(DESTID, out object destObj))
-                {
-                    if (string.Compare(destObj.ToString(), appId, true) == 0)
-                    {
-                        Logger?.Trace($"Received command on partition {receivedEvent.Partition.PartitionId}");
-                        var json = Encoding.UTF8.GetString(receivedEvent.Data.Body.ToArray());
-                        var cmd = JsonConvert.DeserializeObject<Command>(json);
-                        if (cmd != null)
-                        {
-                            await commandCallback(cmd);
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Logger?.Error(ex, "Unable to process event from event hub partition");
-            }
+                Console.WriteLine($"RX {command.CommandType}");
+                await commandCallback(command);
+            });
         }
 
-
-        public async Task SendCommand(Command command, string topic, string destinationGuid = null)
+        public async Task SendCommand(Command command, Guid destinationGuid)
         {
-            if (!string.IsNullOrWhiteSpace(destinationGuid))
-            {
-                topic += "-" + destinationGuid;
-            }
-
-            await using var producerClient = new EventHubProducerClient(kafkaConnStr, topic);
-            using EventDataBatch eventBatch = await producerClient.CreateBatchAsync();
-            var data = JsonConvert.SerializeObject(command);
-            var eventData = new EventData(Encoding.UTF8.GetBytes(data));
-            eventData.Properties[DESTID] = command.DestinationId;
-            eventBatch.TryAdd(eventData);
-            await producerClient.SendAsync(eventBatch);
+            await TryConnect();
+            await hubConnection.SendAsync("SendCommandV1", command, destinationGuid);
         }
-
 
         /// <summary>
         /// Packs specificed object to base 64 into the commands data object.
@@ -139,24 +113,21 @@ namespace BigMission.CommandTools
             if (disposed)
                 return;
 
-            if (disposing)
+            if (hubConnection != null)
             {
-                ehReader.CancelProcessing();
+                hubConnection.DisposeAsync().Wait();
             }
 
             disposed = true;
         }
 
-        public virtual ValueTask DisposeAsync()
+        public virtual async ValueTask DisposeAsync()
         {
-            try
+            Dispose();
+
+            if (hubConnection != null)
             {
-                Dispose();
-                return default;
-            }
-            catch (Exception exception)
-            {
-                return new ValueTask(Task.FromException(exception));
+                await hubConnection.DisposeAsync();
             }
         }
     }
