@@ -57,10 +57,14 @@ namespace BigMission.CommandTools
                 try
                 {
                     await hubConnection.StartAsync();
+                    Logger.Debug("Connected to service hub");
                 }
                 catch (Exception ex)
                 {
                     Logger.Error(ex, "Error connecting to service hub.");
+                    
+                    // Start reconnect sequence
+                    await HubConnection_Closed(null);
                 }
             }
         }
@@ -70,7 +74,7 @@ namespace BigMission.CommandTools
             await TryConnect();
             hubConnection.On("ReceiveCommandV1", async (Command command) =>
             {
-                Console.WriteLine($"RX {command.CommandType}");
+                Logger.Debug($"RX {command.CommandType}");
                 await commandCallback(command);
             });
         }
