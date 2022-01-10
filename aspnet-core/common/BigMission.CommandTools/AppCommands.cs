@@ -1,13 +1,9 @@
-﻿using Azure.Messaging.EventHubs;
-using Azure.Messaging.EventHubs.Consumer;
-using Azure.Messaging.EventHubs.Producer;
-using BigMission.CommandTools.Models;
+﻿using BigMission.CommandTools.Models;
 using Microsoft.AspNetCore.SignalR.Client;
 using Newtonsoft.Json;
 using NLog;
 using System;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace BigMission.CommandTools
@@ -21,6 +17,7 @@ namespace BigMission.CommandTools
 
         private volatile bool disposed;
         private readonly HubConnection hubConnection;
+        private bool reconnectActive;
 
 
         public AppCommands(Guid appId, string apiKey, string url, ILogger logger)
@@ -42,15 +39,26 @@ namespace BigMission.CommandTools
 
         private async Task HubConnection_Closed(Exception arg)
         {
-            while (hubConnection.State == HubConnectionState.Disconnected)
+            if (!reconnectActive)
             {
-                await Task.Delay(TimeSpan.FromSeconds(5));
-                Logger.Debug("Attempting to reconnect to service hub.");
-                await TryConnect();
+                reconnectActive = true;
+                try
+                {
+                    while (hubConnection.State == HubConnectionState.Disconnected)
+                    {
+                        await Task.Delay(TimeSpan.FromSeconds(5));
+                        Logger.Debug("Attempting to reconnect to service hub.");
+                        await TryConnectAsync();
+                    }
+                }
+                finally
+                {
+                    reconnectActive = false;
+                }
             }
         }
 
-        private async Task TryConnect()
+        private async Task<bool> TryConnectAsync()
         {
             if (hubConnection.State == HubConnectionState.Disconnected)
             {
@@ -62,16 +70,24 @@ namespace BigMission.CommandTools
                 catch (Exception ex)
                 {
                     Logger.Error(ex, "Error connecting to service hub.");
-                    
+
                     // Start reconnect sequence
-                    await HubConnection_Closed(null);
+                    await HubConnection_Closed(null).ConfigureAwait(false);
                 }
             }
+
+            return hubConnection.State == HubConnectionState.Connected;
+        }
+
+        public async Task<HubConnection> GetHubAsync()
+        {
+            await TryConnectAsync();
+            return hubConnection;
         }
 
         public async Task ListenForCommandsAsync(Func<Command, Task> commandCallback)
         {
-            await TryConnect();
+            await TryConnectAsync();
             hubConnection.On("ReceiveCommandV1", async (Command command) =>
             {
                 Logger.Debug($"RX {command.CommandType}");
@@ -79,9 +95,9 @@ namespace BigMission.CommandTools
             });
         }
 
-        public async Task SendCommand(Command command, Guid destinationGuid)
+        public async Task SendCommandAsync(Command command, Guid destinationGuid)
         {
-            await TryConnect();
+            await TryConnectAsync();
             await hubConnection.SendAsync("SendCommandV1", command, destinationGuid);
         }
 
