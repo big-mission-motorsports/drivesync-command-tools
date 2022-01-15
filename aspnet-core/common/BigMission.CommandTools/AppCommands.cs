@@ -81,7 +81,7 @@ namespace BigMission.CommandTools
 
         public async Task<HubConnection> GetHubAsync()
         {
-            await TryConnectAsync();
+            //await TryConnectAsync();
             return hubConnection;
         }
 
