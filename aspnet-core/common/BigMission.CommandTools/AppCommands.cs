@@ -79,7 +79,7 @@ namespace BigMission.CommandTools
             return hubConnection.State == HubConnectionState.Connected;
         }
 
-        public async Task<HubConnection> GetHubAsync()
+        public HubConnection GetHubAsync()
         {
             //await TryConnectAsync();
             return hubConnection;
