@@ -16,7 +16,7 @@ namespace BigMission.CommandTools
         private ILogger Logger { get; }
 
         private volatile bool disposed;
-        private readonly HubConnection hubConnection;
+        public HubConnection HubConnection { get; }
         private bool reconnectActive;
 
 
@@ -24,7 +24,7 @@ namespace BigMission.CommandTools
         {
             Logger = logger;
 
-            hubConnection = new HubConnectionBuilder()
+            HubConnection = new HubConnectionBuilder()
                 .WithUrl(url, option =>
                 {
                     option.AccessTokenProvider = async () =>
@@ -34,7 +34,7 @@ namespace BigMission.CommandTools
                     };
                 }).Build();
 
-            hubConnection.Closed += HubConnection_Closed;
+            HubConnection.Closed += HubConnection_Closed;
         }
 
         private async Task HubConnection_Closed(Exception arg)
@@ -44,7 +44,7 @@ namespace BigMission.CommandTools
                 reconnectActive = true;
                 try
                 {
-                    while (hubConnection.State == HubConnectionState.Disconnected)
+                    while (HubConnection.State == HubConnectionState.Disconnected)
                     {
                         await Task.Delay(TimeSpan.FromSeconds(5));
                         Logger.Debug("Attempting to reconnect to service hub.");
@@ -60,11 +60,11 @@ namespace BigMission.CommandTools
 
         private async Task<bool> TryConnectAsync()
         {
-            if (hubConnection.State == HubConnectionState.Disconnected)
+            if (HubConnection.State == HubConnectionState.Disconnected)
             {
                 try
                 {
-                    await hubConnection.StartAsync();
+                    await HubConnection.StartAsync();
                     Logger.Debug("Connected to service hub");
                 }
                 catch (Exception ex)
@@ -76,19 +76,19 @@ namespace BigMission.CommandTools
                 }
             }
 
-            return hubConnection.State == HubConnectionState.Connected;
+            return HubConnection.State == HubConnectionState.Connected;
         }
 
         public HubConnection GetHubAsync()
         {
             //await TryConnectAsync();
-            return hubConnection;
+            return HubConnection;
         }
 
         public async Task ListenForCommandsAsync(Func<Command, Task> commandCallback)
         {
             await TryConnectAsync();
-            hubConnection.On("ReceiveCommandV1", async (Command command) =>
+            HubConnection.On("ReceiveCommandV1", async (Command command) =>
             {
                 Logger.Debug($"RX {command.CommandType}");
                 await commandCallback(command);
@@ -98,7 +98,7 @@ namespace BigMission.CommandTools
         public async Task SendCommandAsync(Command command, Guid destinationGuid)
         {
             await TryConnectAsync();
-            await hubConnection.SendAsync("SendCommandV1", command, destinationGuid);
+            await HubConnection.SendAsync("SendCommandV1", command, destinationGuid);
         }
 
         /// <summary>
@@ -133,9 +133,9 @@ namespace BigMission.CommandTools
             if (disposed)
                 return;
 
-            if (hubConnection != null)
+            if (HubConnection != null)
             {
-                hubConnection.DisposeAsync().Wait();
+                HubConnection.DisposeAsync().Wait();
             }
 
             disposed = true;
@@ -145,9 +145,9 @@ namespace BigMission.CommandTools
         {
             Dispose();
 
-            if (hubConnection != null)
+            if (HubConnection != null)
             {
-                await hubConnection.DisposeAsync();
+                await HubConnection.DisposeAsync();
             }
         }
     }
