@@ -7,5 +7,6 @@
         public const string SET_LOG_LEVEL = "SetLogLevel";
         public const string SEND_KEYPAD_BUTTON_PRESS = "SendKeypadButtonPress";
         public const string RESTART = "Restart";
+        public const string SERVICE_UPGRADE = "ServiceUpgrade";
     }
 }
