@@ -47,7 +47,7 @@ namespace BigMission.CommandTools
                     while (HubConnection.State == HubConnectionState.Disconnected)
                     {
                         await Task.Delay(TimeSpan.FromSeconds(5));
-                        Logger.Debug("Attempting to reconnect to service hub.");
+                        Logger?.Debug("Attempting to reconnect to service hub.");
                         await TryConnectAsync();
                     }
                 }
@@ -65,11 +65,11 @@ namespace BigMission.CommandTools
                 try
                 {
                     await HubConnection.StartAsync();
-                    Logger.Debug("Connected to service hub");
+                    Logger?.Debug("Connected to service hub");
                 }
                 catch (Exception ex)
                 {
-                    Logger.Error(ex, "Error connecting to service hub.");
+                    Logger?.Error(ex, "Error connecting to service hub.");
 
                     // Start reconnect sequence
                     await HubConnection_Closed(null).ConfigureAwait(false);
@@ -90,7 +90,7 @@ namespace BigMission.CommandTools
             await TryConnectAsync();
             HubConnection.On("ReceiveCommandV1", async (Command command) =>
             {
-                Logger.Debug($"RX {command.CommandType}");
+                Logger?.Debug($"RX {command.CommandType}");
                 await commandCallback(command);
             });
         }
