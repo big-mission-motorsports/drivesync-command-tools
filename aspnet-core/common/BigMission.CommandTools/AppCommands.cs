@@ -1,7 +1,7 @@
 ﻿using BigMission.CommandTools.Models;
 using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using NLog;
 using System;
 using System.Text;
 using System.Threading.Tasks;
@@ -20,9 +20,9 @@ namespace BigMission.CommandTools
         private bool reconnectActive;
 
 
-        public AppCommands(Guid appId, string apiKey, string url, ILogger logger)
+        public AppCommands(Guid appId, string apiKey, string url, ILoggerFactory loggerFactory)
         {
-            Logger = logger;
+            Logger = loggerFactory.CreateLogger(GetType().Name);
 
             HubConnection = new HubConnectionBuilder()
                 .WithUrl(url, option =>
@@ -47,7 +47,7 @@ namespace BigMission.CommandTools
                     while (HubConnection.State == HubConnectionState.Disconnected)
                     {
                         await Task.Delay(TimeSpan.FromSeconds(5));
-                        Logger?.Debug("Attempting to reconnect to service hub.");
+                        Logger?.LogDebug("Attempting to reconnect to service hub.");
                         await TryConnectAsync();
                     }
                 }
@@ -65,11 +65,11 @@ namespace BigMission.CommandTools
                 try
                 {
                     await HubConnection.StartAsync();
-                    Logger?.Debug("Connected to service hub");
+                    Logger?.LogDebug("Connected to service hub");
                 }
                 catch (Exception ex)
                 {
-                    Logger?.Error(ex, "Error connecting to service hub.");
+                    Logger?.LogError(ex, "Error connecting to service hub.");
 
                     // Start reconnect sequence
                     await HubConnection_Closed(null).ConfigureAwait(false);
@@ -90,7 +90,7 @@ namespace BigMission.CommandTools
             await TryConnectAsync();
             HubConnection.On("ReceiveCommandV1", async (Command command) =>
             {
-                Logger?.Debug($"RX {command.CommandType}");
+                Logger?.LogDebug($"RX {command.CommandType}");
                 await commandCallback(command);
             });
         }
@@ -102,7 +102,7 @@ namespace BigMission.CommandTools
         }
 
         /// <summary>
-        /// Packs specificed object to base 64 into the commands data object.
+        /// Packs specified object to base 64 into the commands data object.
         /// </summary>
         /// <param name="data"></param>
         /// <param name="cmd"></param>
@@ -133,10 +133,7 @@ namespace BigMission.CommandTools
             if (disposed)
                 return;
 
-            if (HubConnection != null)
-            {
-                HubConnection.DisposeAsync().Wait();
-            }
+            HubConnection?.DisposeAsync().Wait();
 
             disposed = true;
         }
