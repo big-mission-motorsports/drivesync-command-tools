@@ -1,16 +1,23 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>netcoreapp3.1</TargetFramework>
+		<Title>CommandTools</Title>
+		<Version>2.0.0.0</Version>
+		<Authors>Brian Griggs</Authors>
+		<Company>Big Mission Motorsports, LLC</Company>
+		<Product>Red Mist</Product>
+		<Description>Shared command classes for sending commands across tiers</Description>
+		<Copyright>2023</Copyright>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<RepositoryType>git</RepositoryType>
+		<RepositoryUrl>https://dev.azure.com/bigmission/RedMist/_git/CommandTools</RepositoryUrl>
+		<IncludeSymbols>True</IncludeSymbols>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <None Remove="C:\Users\brian\.nuget\packages\nlog.config\4.7.2\contentFiles\any\any\NLog.config" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="3.1.6" />
+		<PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="3.1.6" />
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
-  </ItemGroup>
-  
 </Project>
