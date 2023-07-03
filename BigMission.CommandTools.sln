@@ -8,6 +8,8 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{F8DEB518-12CE-4CEF-A282-8F26081A4612}"
 	ProjectSection(SolutionItems) = preProject
 		.gitignore = .gitignore
+		pipeline-publish.yml = pipeline-publish.yml
+		pipelines-ci.yml = pipelines-ci.yml
 		README.md = README.md
 	EndProjectSection
 EndProject
