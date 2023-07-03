@@ -9,7 +9,6 @@
 		<Product>Red Mist</Product>
 		<Description>Shared command classes for sending commands across tiers</Description>
 		<Copyright>2023</Copyright>
-		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<RepositoryType>git</RepositoryType>
 		<RepositoryUrl>https://dev.azure.com/bigmission/RedMist/_git/CommandTools</RepositoryUrl>
 		<IncludeSymbols>True</IncludeSymbols>
