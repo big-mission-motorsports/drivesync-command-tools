@@ -20,7 +20,7 @@ public class AppCommands : IDisposable
     private bool reconnectActive;
 
 
-    public AppCommands(Guid appId, string apiKey, string url, ILoggerFactory loggerFactory)
+    public AppCommands(Guid appId, string apiKey, string aesKeyStr, string url, ILoggerFactory loggerFactory)
     {
         Logger = loggerFactory.CreateLogger(GetType().Name);
 
@@ -29,7 +29,7 @@ public class AppCommands : IDisposable
             {
                 option.AccessTokenProvider = async () =>
                 {
-                    var token = KeyUtilities.EncodeToken(appId, apiKey);
+                    var token = KeyUtilities.EncodeToken(appId, apiKey, aesKeyStr);
                     return await Task.FromResult(token);
                 };
             }).Build();

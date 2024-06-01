@@ -11,19 +11,19 @@ namespace BigMission.CommandTools;
 /// </summary>
 public class KeyUtilities
 {
-    private static readonly byte[] AES_KEY = Encoding.UTF8.GetBytes("439ekdaaqwewwwwmgjhk234dsmlapepo");
-
-    public static string EncodeToken(Guid appId, string apiKey)
+    public static string EncodeToken(Guid appId, string apiKey, string aesKeyStr)
     {
+        var aesKey = Encoding.UTF8.GetBytes(aesKeyStr);
         var tb = GetTokenBuffer(apiKey, appId);
-        var r = Encrypt(tb);
+        var r = Encrypt(tb, aesKey);
         return Convert.ToBase64String(r);
     }
 
-    public static (Guid appId, string apiKey) DecodeToken(string token)
+    public static (Guid appId, string apiKey) DecodeToken(string token, string aesKeyStr)
     {
+        var aesKey = Encoding.UTF8.GetBytes(aesKeyStr);
         var decodeBuff = Convert.FromBase64String(token);
-        var dr = Decrypt(decodeBuff);
+        var dr = Decrypt(decodeBuff, aesKey);
         return GetTokenComponents(dr);
     }
 
@@ -44,10 +44,10 @@ public class KeyUtilities
     }
 
     // https://docs.microsoft.com/en-us/dotnet/api/system.security.cryptography.aes?view=net-6.0
-    private static byte[] Encrypt(byte[] plainText)
+    private static byte[] Encrypt(byte[] plainText, byte[] aesKey)
     {
         using Aes aesAlg = Aes.Create();
-        aesAlg.Key = AES_KEY;
+        aesAlg.Key = aesKey;
 
         ICryptoTransform encryptor = aesAlg.CreateEncryptor(aesAlg.Key, aesAlg.IV);
         var encrypted = encryptor.TransformFinalBlock(plainText, 0, plainText.Length);
@@ -56,10 +56,10 @@ public class KeyUtilities
         return [.. dataWithIV];
     }
 
-    private static byte[] Decrypt(byte[] cipher)
+    private static byte[] Decrypt(byte[] cipher, byte[] aesKey)
     {
         using Aes aesAlg = Aes.Create();
-        aesAlg.Key = AES_KEY;
+        aesAlg.Key = aesKey;
         aesAlg.IV = cipher[..16];
         cipher = cipher[16..];
         ICryptoTransform decryptor = aesAlg.CreateDecryptor(aesAlg.Key, aesAlg.IV);
