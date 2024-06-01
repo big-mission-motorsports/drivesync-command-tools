@@ -9,7 +9,7 @@ namespace BigMission.CommandTools;
 /// <summary>
 /// Tools for encrypting and decrypting.
 /// </summary>
-public class KeyUtilities
+public partial class KeyUtilities
 {
     public static string EncodeToken(Guid appId, string apiKey, string aesKeyStr)
     {
@@ -72,12 +72,15 @@ public class KeyUtilities
     /// <returns></returns>
     public static string NewApiKey()
     {
-        //var bytes = RandomNumberGenerator.GetBytes(25);
-        var bytes = new byte[25];
-        using (var crypto = new RNGCryptoServiceProvider())
-            crypto.GetBytes(bytes);
+        var bytes = RandomNumberGenerator.GetBytes(25);
+        //var bytes = new byte[25];
+        //using (var crypto = new RNGCryptoServiceProvider())
+        //    crypto.GetBytes(bytes);
         var base64 = Convert.ToBase64String(bytes);
-        var result = Regex.Replace(base64, "[^A-Za-z0-9]", "");
+        var result = KeyRegex().Replace(base64, "");
         return result;
     }
+
+    [GeneratedRegex("[^A-Za-z0-9]")]
+    private static partial Regex KeyRegex();
 }
