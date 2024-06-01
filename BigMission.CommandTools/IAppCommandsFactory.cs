@@ -1,7 +1,6 @@
-﻿namespace BigMission.CommandTools
+﻿namespace BigMission.CommandTools;
+
+public interface IAppCommandsFactory
 {
-    public interface IAppCommandsFactory
-    {
-        AppCommands CreateAppCommands();
-    }
+    AppCommands CreateAppCommands();
 }
