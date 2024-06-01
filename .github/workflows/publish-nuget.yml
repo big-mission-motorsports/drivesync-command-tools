@@ -27,4 +27,4 @@ jobs:
       - name: Create the package
         run: dotnet pack BigMission.CommandTools/BigMission.CommandTools.csproj --configuration Release
       - name: Publish the package to Nuget
-        run: dotnet nuget push BigMission.CommandTools\bin\Release\*.nupkg -s https://api.nuget.org/v3/index.json --api-key ${{secrets.NUGET_TOKEN}} --skip-duplicate
+        run: dotnet nuget push BigMission.CommandTools/bin/Release/*.nupkg -s https://api.nuget.org/v3/index.json --api-key ${{secrets.NUGET_TOKEN}} --skip-duplicate
